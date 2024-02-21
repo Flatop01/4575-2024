@@ -29,14 +29,15 @@ public class Robot extends TimedRobot {
   private DifferentialDrive m_myRobot;
   private XboxController m_driver;
   private XboxController m_opp;
-  
+ 
   //auto selector
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
+  private static final String klime = "LimeLight Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
   private static final AHRS gyro = new AHRS(SPI.Port.kMXP); //add as a global variable near the top
-  
+ 
 
   // private static final MotorController m_right1Motor = new CANSParkMax(1,MotorType.kBrushless);
   private static final int m_left1Motorid = 1;
@@ -81,17 +82,18 @@ public class Robot extends TimedRobot {
   // private final MotorController m_climbMotor = new CANSparkMax(12,MotorType.kBrushless);
   private static final int m_climbMotorid = 12;
   private CANSparkMax m_climbMotor;
-  
+ 
   private double starttime;
   private double heading;
   //limelight stuff
-  
+ 
   @Override
   public void robotInit() {
-    
+   
     //auto selector
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
+    m_chooser.addOption("LimeLight Auto", klime);
     SmartDashboard.putData("Auto choices", m_chooser);
 
     m_right1Motor = new CANSparkMax(m_right1Motorid, MotorType.kBrushless);
@@ -107,16 +109,17 @@ public class Robot extends TimedRobot {
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
     m_right1Motor.setInverted(true);
-    m_shooter1Motor.setInverted(true);
-    
-    m_intake2Motor.follow(m_intake1Motor);
     m_right2Motor.follow(m_right1Motor);
     m_left2Motor.follow(m_left1Motor);
+
+    m_shooter1Motor.setInverted(true);
+   
+    m_intake2Motor.follow(m_intake1Motor);
 
     m_myRobot = new DifferentialDrive(m_left1Motor, m_right1Motor);
     m_driver = new XboxController(0);
     m_opp = new XboxController(1);
-    
+   
     //limelight stuff
     // Make sure you only configure port forwarding once in your robot code.
         // Do not place these function calls in any periodic functions
@@ -124,11 +127,11 @@ public class Robot extends TimedRobot {
             PortForwarder.add(port, "limelight.local", port);
         }
   }
-  
+ 
   @Override
   public void autonomousInit() {
     starttime = Timer.getFPGATimestamp();
-    gyro.zeroYaw();
+    heading = gyro.getYaw();
      m_autoSelected = m_chooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
   }
@@ -140,10 +143,25 @@ public class Robot extends TimedRobot {
         SmartDashboard.putNumber("gyro pitch", pitch);
         SmartDashboard.putNumber("gyro yaw", yaw);
         SmartDashboard.putNumber("gyro roll", roll);
+        //limelight stuff
+    NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
+NetworkTableEntry tx = table.getEntry("tx");
+NetworkTableEntry ty = table.getEntry("ty");
+NetworkTableEntry ta = table.getEntry("ta");
+
+//read values periodically
+double x = tx.getDouble(0.0);
+double y = ty.getDouble(0.0);
+double area = ta.getDouble(0.0);
+
+//post to smart dashboard periodically
+SmartDashboard.putNumber("LimelightX", x);
+SmartDashboard.putNumber("LimelightY", y);
+SmartDashboard.putNumber("LimelightArea", area);
   }
-  
-  
-  
+ 
+ 
+ 
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
@@ -172,7 +190,7 @@ SmartDashboard.putNumber("LimelightArea", area);
       m_left1Motor.set(.2);
       m_right1Motor.set(.2);
       m_intake1Motor.set(-1);
-    } 
+    }
     if (time - starttime > 2){
       m_intake1Motor.set(0);
       m_left1Motor.set(-.1);
@@ -181,16 +199,16 @@ SmartDashboard.putNumber("LimelightArea", area);
     if (time - starttime > 3) {
       m_left1Motor.set(0);
     }
-      
-    
+     
+   
   if (time - starttime > 3.01){
     if ( x >= 5) {
       m_left1Motor.set(.1);
-      
+     
       if (x <= 5){
         m_left1Motor.set(0);
       }
-      
+     
     } else if (x <= -5) {
       m_right1Motor.set(.1);
       if (x>=-5){
@@ -208,7 +226,7 @@ SmartDashboard.putNumber("LimelightArea", area);
         break;
       case kDefaultAuto:
       default:
-        
+       
         // double leftSlow = 0.24;
         // double rightSlow = 0.24;
         // double rotateSpeed = 0.35;
@@ -263,8 +281,7 @@ SmartDashboard.putNumber("LimelightArea", area);
    }
   }*/
 
-
-        if(timed - starttime < 5) {
+         if(timed - starttime < 5) {
           m_shooter1Motor.set(.8);
           m_shooter2Motor.set(.8);
         } else {
@@ -275,15 +292,22 @@ SmartDashboard.putNumber("LimelightArea", area);
           m_advancerMotor.set(-0.5);
         }
         if (timed - starttime > 6.3 ) {
-      m_left1Motor.set(.2);
-      m_right1Motor.set(.2);
+     
+      m_right1Motor.set(-.2);
+      m_left1Motor.set(-.2);
       m_intake1Motor.set(-.5);
+      
+      
         }
         if (timed - starttime > 7.7){
+     
+      
       m_intake1Motor.set(0);
-      m_left1Motor.set(-.2);
-      m_right1Motor.set(-.2);
+      m_right1Motor.set(.2);
+      m_left1Motor.set(.2);
       m_advancerMotor.set(-0.2);
+      
+      
     }
     if (timed - starttime > 9) {
       m_left1Motor.set(0);
@@ -294,13 +318,20 @@ SmartDashboard.putNumber("LimelightArea", area);
     if (timed - starttime > 11) {
       m_advancerMotor.set(1);
       m_intake1Motor.set(-0.2);
-      
+     
     }
 
         break;
-     }
-    
-    
+
+        case klime:
+       
+        LimeLightAuto:
+
+        break;
+     
+      }
+   
+   
 }
   @Override
   public void teleopInit() {
@@ -309,15 +340,16 @@ SmartDashboard.putNumber("LimelightArea", area);
 
 
   @Override
-  public void teleopPeriodic() { 
+  public void teleopPeriodic() {
     //gyro stuff
-        
+       
         double yaw = gyro.getYaw();
         double pitch =gyro.getPitch();
         double roll = gyro.getRoll();
         SmartDashboard.putNumber("gyro pitch", pitch);
         SmartDashboard.putNumber("gyro yaw", yaw);
         SmartDashboard.putNumber("gyro roll", roll);
+       
     //limelight stuff
     NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
 NetworkTableEntry tx = table.getEntry("tx");
@@ -333,19 +365,21 @@ double area = ta.getDouble(0.0);
 SmartDashboard.putNumber("LimelightX", x);
 SmartDashboard.putNumber("LimelightY", y);
 SmartDashboard.putNumber("LimelightArea", area);
+SmartDashboard.putNumber("x", m_driver.getLeftX());
+SmartDashboard.putNumber("y", m_driver.getLeftY());
 
+  if ((Math.abs(m_driver.getLeftX()) > 0.1) || (Math.abs(m_driver.getLeftY()) > 0.115625 )) {
+    heading = Math.round(gyro.getYaw());
+    SmartDashboard.putNumber("Heading:", heading);
+  }
 
-  // while ((Math.abs(m_driver.getLeftX()) > 0) || (Math.abs(m_driver.getLeftY()) > 0 )) {
-  //   heading = gyro.getYaw();
-  // }
-
-  
+ 
 
 // auto stuff that I found in wpilib that should stop auto once telop begins
     // if (m_autonomousCommand != null) {
     //   m_autonomousCommand.cancel();
     // }
-  
+ 
     // if (m_opp.getRightBumper()) {
     //   m_shoulderintakeMotor.set(1);
     // } else {
@@ -387,13 +421,13 @@ SmartDashboard.putNumber("LimelightArea", area);
       m_intake1Motor.set(0);
       m_advancerMotor.set(0);
     }
-    
+   
     if (m_driver.getAButton()){
-      
+     
       m_shooter1Motor.set(.75);
       m_shooter2Motor.set(.75);
     } else if (m_driver.getYButton()) {
-      
+     
       m_shooter1Motor.set(-1);
       m_shooter2Motor.set(-1);
     } else {
@@ -402,10 +436,10 @@ SmartDashboard.putNumber("LimelightArea", area);
     }
     // if (m_opp.getBButton()){
     //   m_advancerMotor.set(-0.4);
-      
+     
     // } else if (m_opp.getXButton()) {
     //   m_advancerMotor.set(0.4);
-      
+     
     // } else {
     //   m_advancerMotor.set(0);
     // }
@@ -413,18 +447,21 @@ if (m_driver.getAButton()) {
  m_shooter1Motor.set(0);
   m_shooter2Motor.set(0);
 }
-    // if (yaw != heading){
-    //   if(yaw> heading ){
-    //     m_right1Motor.set(.25);
-    //   }
-    //   if(yaw<heading){
-    //     m_left1Motor.set(.25);
-    //   }
-    // }else{
-
-    // }
-    m_myRobot.arcadeDrive(m_driver.getLeftY()/2, m_driver.getLeftX()/2);
-    
+if (m_driver.getYButton()){
+  heading = Math.round(yaw);
+}
+    if (Math.round(yaw) - heading > 5){
+      if(Math.round(yaw)- heading > 5 ){
+        m_right1Motor.set(.25);
+      }
+      if(Math.round(yaw)-heading > 5){
+        m_left1Motor.set(.25);
+      }
+    }else{
+     m_myRobot.arcadeDrive(m_driver.getLeftX()/2.0, m_driver.getLeftY()/2.0);
+    }
+     
+   
 
   }
 }
