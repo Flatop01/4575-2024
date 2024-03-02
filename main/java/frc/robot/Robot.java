@@ -27,7 +27,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  */
 public class Robot extends TimedRobot {
   private DifferentialDrive m_myRobot;
-//  private DriveStrait m_myRobotds;
+  //  private DriveStrait m_myRobotds;
   private Safty safty;
   private XboxController m_driver;
   private XboxController m_opp;
@@ -36,7 +36,8 @@ public class Robot extends TimedRobot {
   //auto selector
   private static final String kDefaultAuto = "Default";
   private static final String kSpeakerSafeShot = "Speaker Shot";
-  private static final String klime = "LimeLight Auto";
+  private static final String kconer2d = "Corner auto 1d side";
+  private static final String kconer1d = "Corner auto 2d side";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
   
@@ -47,30 +48,27 @@ public class Robot extends TimedRobot {
   
   private static final AHRS gyro = new AHRS(SPI.Port.kMXP); //add as a global variable near the top
   
-  //some safty stuff
+  
   private double getAngleDiff (double angle1, double angle2) {
     var retval2 = 0.0;
     var retVal = 0.0;
     if(angle1-angle2<0) {
-
-    if(angle1-angle2<-180) {
-      retVal = angle1 + (360 - angle2);
+      if(angle1-angle2<-180) {
+        retVal = angle1 + (360 - angle2);
       } else {
         retVal = angle1 - angle2 ; 
     } 
-  }  else {
-
-   if((angle1- angle2) >180 ) {
-    retVal = angle1-angle2-360; 
-    
-   } else {
-     retVal = angle1 - angle2;
-   }
+    } else {
+      if((angle1- angle2) >180 ) {
+       retVal = angle1-angle2-360; 
+      } else {
+        retVal = angle1 - angle2;
+      }
     }
-    retval2 = retVal / 25;
+    retval2 = retVal / 50;
     return retval2;
   }
-    // private static final MotorController m_right1Motor = new CANSparkMax(1,MotorType.kBrushless);
+  // private static final MotorController m_right1Motor = new CANSparkMax(1,MotorType.kBrushless);
   private static final int m_left1Motorid = 1;
   private CANSparkMax m_left1Motor;
   // private DriveStrait m_left1Motords;
@@ -132,7 +130,8 @@ public class Robot extends TimedRobot {
     //auto selector
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("Speaker Shot", kSpeakerSafeShot);
-    m_chooser.addOption("LimeLight Auto", klime);
+    m_chooser.addOption("Corner auto 2d side", kconer2d);
+    m_chooser.addOption("Corner auto 1d side", kconer1d);
     SmartDashboard.putData("Auto choices", m_chooser);
 
     m_limechoser.setDefaultOption("Standard", streamstanderd);
@@ -158,34 +157,26 @@ public class Robot extends TimedRobot {
     m_right2Motor.follow(m_right1Motor);
     m_left2Motor.follow(m_left1Motor);
     m_myRobot = new DifferentialDrive(m_left1Motor, m_right1Motor);
-//    m_myRobotds = new DriveStrait(m_left1Motor, m_left2Motor, m_right1Motor, m_right2Motor, gyro);
-
-    // safty = new Safty(m_left1Motor, m_left2Motor, m_right1Motor, m_right2Motor, m_shooter1Motor, m_shooter2Motor,
-    //  m_intake1Motor,  m_intake2Motor, m_advancerMotor);
-    
     m_shooter1Motor.setInverted(true);
-   
     m_intake2Motor.follow(m_intake1Motor);
-
-    
     m_driver = new XboxController(0);
     m_opp = new XboxController(1);
-   
     //limelight stuff
     // Make sure you only configure port forwarding once in your robot code.
-        // Do not place these function calls in any periodic functions
-        for (int port = 5800; port <= 5807; port++) {
-            PortForwarder.add(port, "limelight.local", port);
-        }
+    // Do not place these function calls in any periodic functions
+    for (int port = 5800; port <= 5807; port++) {
+      PortForwarder.add(port, "limelight.local", port);
+    }
   }
  
   @Override
   public void autonomousInit() {
     starttime = Timer.getFPGATimestamp();
     heading = gyro.getYaw();
-     m_autoSelected = m_chooser.getSelected();
+    m_autoSelected = m_chooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
   }
+  
   @Override
   public void disabledPeriodic() {
     // safty.checkifsafe();
@@ -217,28 +208,23 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-     switch (m_autoSelected) {
-      case kSpeakerSafeShot:
-        // safty.checkifsafe();
-      //limelight stuff
+    switch (m_autoSelected) {
+    case kSpeakerSafeShot:
+    // safty.checkifsafe();
+    //limelight stuff
     NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
-NetworkTableEntry tx = table.getEntry("tx");
-NetworkTableEntry ty = table.getEntry("ty");
-NetworkTableEntry ta = table.getEntry("ta");
-
-//read values periodically
-double x = tx.getDouble(0.0);
-double y = ty.getDouble(0.0);
-double area = ta.getDouble(0.0);
-
-//post to smart dashboard periodically
-SmartDashboard.putNumber("LimelightX", x);
-SmartDashboard.putNumber("LimelightY", y);
-SmartDashboard.putNumber("LimelightArea", area);
-
-   double time = Timer.getFPGATimestamp();
-
-
+    NetworkTableEntry tx = table.getEntry("tx");
+    NetworkTableEntry ty = table.getEntry("ty");
+    NetworkTableEntry ta = table.getEntry("ta");
+    //read values periodically
+    double x = tx.getDouble(0.0);
+    double y = ty.getDouble(0.0);
+    double area = ta.getDouble(0.0);
+    //post to smart dashboard periodically
+    SmartDashboard.putNumber("LimelightX", x);
+    SmartDashboard.putNumber("LimelightY", y);
+    SmartDashboard.putNumber("LimelightArea", area);
+    double time = Timer.getFPGATimestamp();
     if (time - starttime < 1.3 ) {
       m_left1Motor.set(.2);
       m_right1Motor.set(.2);
@@ -252,22 +238,19 @@ SmartDashboard.putNumber("LimelightArea", area);
     if (time - starttime > 3) {
       m_left1Motor.set(0);
     }
-     
-   
-  if (time - starttime > 3.01){
-    if ( x >= 5) {
-      m_left1Motor.set(.1);
+    if (time - starttime > 3.01){
+      if ( x >= 5) {
+        m_left1Motor.set(.1);
      
       if (x <= 5){
         m_left1Motor.set(0);
       }
-     
-    } else if (x <= -5) {
+      } else if (x <= -5) {
       m_right1Motor.set(.1);
       if (x>=-5){
         m_right1Motor.set(0);
       }
-    } else {
+      } else {
       double time1 = Timer.getFPGATimestamp();
       m_shooter1Motor.set(1);
       m_shooter2Motor.set(1);
@@ -276,44 +259,95 @@ SmartDashboard.putNumber("LimelightArea", area);
       }
     }
   }
-        break;
+      break;
       case kDefaultAuto:
       default:
-      //  safty.checkifsafe();
-      
-      // NetworkTableInstance.getDefault().getTable("limelight").getEntry("stream").setNumber(0);
-      // switch (streamPiPMain) {
-      // case "Limelight Cam":
-      //   limelightCam = 1;
-      // break;
-      // case "Other Cam" :
-      //   limelightCam = 2;
-      // break;
-      // default:
-      //   limelightCam = 0;
-      // break;
-      // }
-        
-
         double yaw =  gyro.getYaw();
         double pitch = gyro.getPitch();
         double roll =  gyro.getRoll();
         SmartDashboard.putNumber("gyro pitch", Math.round(pitch));
         SmartDashboard.putNumber("gyro yaw", Math.round(yaw));
         SmartDashboard.putNumber("gyro roll", Math.round(roll));
-        
         double timed = Timer.getFPGATimestamp();
-        
         ismoving = Math.signum(Math.abs(m_right1Motor.getAppliedOutput())) + Math.signum(Math.abs(m_left1Motor.getAppliedOutput())); 
         // signum means if its obove 1 returns 1 if below 1 returns -1 and if 0 returns 0 
         //so it will tell me if its moving 2, if its not moving 0 and, if its turning 2
-        SmartDashboard.putNumber("Step", step);
-        SmartDashboard.putNumber("Is moving", ismoving);
+        SmartDashboard.putNumber("Step", step);              
+        if(timed - starttime < 3) {
+          m_shooter1Motor.set(-.6);
+          m_shooter2Motor.set(.6);
+          step = 1;
+        } else {
+          m_shooter1Motor.set(0);
+          m_shooter2Motor.set(0);
+          step = 1.5;
+        }
+        if(timed - starttime > 2) {
+          m_advancerMotor.set(-1);
+          step = 2;
+        }
+        if (timed - starttime > 3.3 ) {
+         step = 3;
+          m_right1Motor.set(.3);
+          m_left1Motor.set(.3);
+          m_intake1Motor.set(1);
+          m_advancerMotor.set(-0.4);
+        }
         
-        
-        
-         if(timed - starttime < 5) {
-          m_shooter1Motor.set(.8);
+        if (timed - starttime > 5){
+          step = 4;
+          m_intake1Motor.set(0);
+          m_right1Motor.set(-.3);
+          m_left1Motor.set(-.3);
+        }
+        if (timed - starttime > 5.7) {
+          m_advancerMotor.set(0);
+          m_advancerMotor.set(1);
+        }
+        if ( timed - starttime > 6) {
+          m_advancerMotor.set(0);
+        }
+        if (timed - starttime > 6.9) {
+          step = 5;
+          m_left1Motor.set(0);
+          m_right1Motor.set(0);
+          m_shooter1Motor.set(-.75);
+          m_shooter2Motor.set(.75);
+          m_advancerMotor.set(0);
+        }
+        if (timed - starttime > 8.3) {
+          m_advancerMotor.set(-1);
+          
+          step = 6;
+        }
+        if (timed - starttime > 9) {
+          m_advancerMotor.set(0);
+          m_right1Motor.set(-.3);
+          m_left1Motor.set(-.3);
+          m_intake1Motor.set(0);
+          m_shooter1Motor.set(0);
+          m_shooter2Motor.set(0);
+        }
+        if (timed - starttime > 10.9) {
+          m_right1Motor.set(0);
+          m_left1Motor.set(0);
+        }
+        break;
+
+        case kconer1d:
+        pitch = gyro.getPitch();
+        yaw = gyro.getYaw();
+        roll = gyro.getRoll();
+        SmartDashboard.putNumber("gyro pitch", Math.round(pitch));
+        SmartDashboard.putNumber("gyro yaw", Math.round(yaw));
+        SmartDashboard.putNumber("gyro roll", Math.round(roll));
+        double timed2 = Timer.getFPGATimestamp();
+        ismoving = Math.signum(Math.abs(m_right1Motor.getAppliedOutput())) + Math.signum(Math.abs(m_left1Motor.getAppliedOutput())); 
+        // signum means if its obove 1 returns 1 if below 1 returns -1 and if 0 returns 0 
+        //so it will tell me if its moving 2, if its not moving 0 and, if its turning 2
+        SmartDashboard.putNumber("Step", step);           
+        if(timed2 - starttime < 5) {
+          m_shooter1Motor.set(-.8);
           m_shooter2Motor.set(.8);
           step = 1;
         } else {
@@ -321,129 +355,76 @@ SmartDashboard.putNumber("LimelightArea", area);
           m_shooter2Motor.set(0);
           step = 1.5;
         }
-        if(timed - starttime > 4) {
-          m_advancerMotor.set(-0.5);
+        if(timed2 - starttime > 4) {
+          m_advancerMotor.set(-1);
           step = 2;
         }
-        if (timed - starttime > 6.3 ) {
+        if (timed2 - starttime > 7.3 ) {
          step = 3;
-          m_right1Motor.set(-.2);
-          m_left1Motor.set(-.2);
-          m_intake1Motor.set(-.5);
+         m_advancerMotor.set(0);
+          m_right1Motor.set(.3);
+          m_left1Motor.set(.3);
+          m_intake1Motor.set(1);
         }
-        if (timed - starttime > 7.7){
+        if (timed2 - starttime > 9.7) {
           step = 4;
-          m_intake1Motor.set(0);
-          m_right1Motor.set(.2);
-          m_left1Motor.set(.2);
-          m_advancerMotor.set(-0.2);
+          m_right1Motor.set(-.3);
+          m_left1Motor.set(-.3);
         }
-    if (timed - starttime > 9) {
-      step = 5;
-      m_left1Motor.set(0);
-      m_right1Motor.set(0);
-      m_shooter1Motor.set(.75);
-      m_shooter2Motor.set(.75);
-    }
-    if (timed - starttime > 11) {
-      m_advancerMotor.set(1);
-      m_intake1Motor.set(-0.2);
-      step = 6;
-    }
+        if (timed2 - starttime > 11) {
+          step = 5;
+          m_left1Motor.set(0);
+          m_right1Motor.set(0);
+          m_shooter1Motor.set(-.75);
+          m_shooter2Motor.set(.75);
+        }
+        if (timed2 - starttime > 13) {
+          m_advancerMotor.set(-1);
+          step = 6;
+        }
 
         break;
-
-        case klime:
-       
-        LimeLightAuto:
-        
+          case kconer2d:
 
         break;
-     
       }
    
    
-}
+  }
   @Override
   public void teleopInit() {
-    heading = gyro.getYaw();
+  heading = gyro.getYaw();
   }
 
 
   @Override
   public void teleopPeriodic() {
     //gyro stuff
-
-        double yaw = gyro.getAngle();
-        double pitch =gyro.getPitch();
-        double roll = gyro.getRoll();
-        SmartDashboard.putNumber("gyro pitch", Math.round(pitch));
-        SmartDashboard.putNumber("gyro yaw", Math.round(yaw));
-        SmartDashboard.putNumber("gyro roll", Math.round(roll));
-      
-      //  safty.checkifsafe();
-
+    double yaw = gyro.getAngle();
+    double pitch =gyro.getPitch();
+    double roll = gyro.getRoll();
+    SmartDashboard.putNumber("gyro pitch", Math.round(pitch));
+    SmartDashboard.putNumber("gyro yaw", Math.round(yaw));
+    SmartDashboard.putNumber("gyro roll", Math.round(roll));
     //limelight stuff
     NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
-NetworkTableEntry tx = table.getEntry("tx");
-NetworkTableEntry ty = table.getEntry("ty");
-NetworkTableEntry ta = table.getEntry("ta");
-
-//read values periodically
-double x = tx.getDouble(0.0);
-double y = ty.getDouble(0.0);
-double area = ta.getDouble(0.0);
-
-//post to smart dashboard periodically
-SmartDashboard.putNumber("LimelightX", x);
-SmartDashboard.putNumber("LimelightY", y);
-SmartDashboard.putNumber("LimelightArea", area);
-SmartDashboard.putNumber("x", m_driver.getLeftX());
-SmartDashboard.putNumber("y", m_driver.getLeftY());
-
-  if ((Math.abs(m_driver.getLeftX()) > 0.1) || (Math.abs(m_driver.getLeftY()) > 0.115625 )) {
-    heading = Math.round(gyro.getYaw());
-    SmartDashboard.putNumber("Heading:", heading);
-  }
-
- 
-
-/* auto stuff that I found in wpilib that should stop auto once telop begins
-    // if (m_autonomousCommand != null) {
-    //   m_autonomousCommand.cancel();
-    // }
- 
-    // if (m_opp.getRightBumper()) {
-    //   m_shoulderintakeMotor.set(1);
-    // } else {
-    //   m_shoulderintakeMotor.set(0);
-    // }
-    // if (m_opp.getLeftBumper()) {
-    //   m_shoulderintakeMotor.set(-1);
-    // } else {
-    //   m_shoulderintakeMotor.set(0);
-    // }
-    // if (m_opp.getAButton()) {
-    //   m_shoulderrotateMotor.set(1);
-    // } else {
-    //   m_shoulderrotateMotor.set(0);
-    // }
-    // if (m_opp.getBButton()) {
-    //   m_shoulderrotateMotor.set(-1);
-    // } else {
-    //   m_shoulderrotateMotor.set(0);
-    // }
-
-    // if (m_opp.getYButton()) {
-    //   m_shouldermoveMotor.set(1);
-    // } else {
-    //   m_shouldermoveMotor.set(0);
-    // }
-    // if (m_opp.getXButton()) {
-    //   m_shouldermoveMotor.set(-1);
-    // } else {
-    //   m_shouldermoveMotor.set(0);
-     } */
+    NetworkTableEntry tx = table.getEntry("tx");
+    NetworkTableEntry ty = table.getEntry("ty");
+    NetworkTableEntry ta = table.getEntry("ta");
+    //read values periodically
+    double x = tx.getDouble(0.0);
+    double y = ty.getDouble(0.0);
+    double area = ta.getDouble(0.0);
+    //post to smart dashboard periodically
+    SmartDashboard.putNumber("LimelightX", x);
+    SmartDashboard.putNumber("LimelightY", y);
+    SmartDashboard.putNumber("LimelightArea", area);
+    SmartDashboard.putNumber("x", m_driver.getLeftX());
+    SmartDashboard.putNumber("y", m_driver.getLeftY());
+    if ((Math.abs(m_driver.getLeftX()) > 0.1) || (Math.abs(m_driver.getLeftY()) > 0.115625 )) {
+      heading = Math.round(gyro.getYaw());
+      SmartDashboard.putNumber("Heading:", heading);
+    }
     if (m_opp.getLeftBumper() || m_driver.getLeftBumper()){
       m_intake1Motor.set(1);
       m_advancerMotor.set(-1);
@@ -454,42 +435,22 @@ SmartDashboard.putNumber("y", m_driver.getLeftY());
       m_intake1Motor.set(0);
       m_advancerMotor.set(0);
     }
-   
-    if (m_opp.getAButton()){
-     
+    if (m_opp.getAButton() || m_driver.getAButton()){
       m_shooter1Motor.set(-1);
       m_shooter2Motor.set(1);
-    } else if (m_opp.getYButton()) {
-     
-      m_shooter1Motor.set(-1);
+    } else if (m_opp.getYButton() || m_driver.getYButton()) {
+      m_shooter1Motor.set(1);
       m_shooter2Motor.set(-1);
+    } else if (m_opp.getBButton() || m_driver.getBButton()) {
+      m_shooter1Motor.set(-0.1);
+      m_shooter2Motor.set(0.5);
     } else {
       m_shooter1Motor.set(0);
       m_shooter2Motor.set(0);
     }
-    // if (m_opp.getBButton()){
-    //   m_advancerMotor.set(-0.4);
-     
-    // } else if (m_opp.getXButton()) {
-    //   m_advancerMotor.set(0.4);
-     
-    // } else {
-    //   m_advancerMotor.set(0);
-    // }
+    m_shooter1Motor.set(m_opp.getLeftTriggerAxis());
+    m_shooter2Motor.set(m_opp.getRightTriggerAxis());
     m_RampUppy.set(m_opp.getRightY()*-5);
-
-// if (m_driver.getYButton()){
-//   heading = Math.round(yaw) + 180;
-// }
-  //m_myRobotds.runGyro(heading, m_driver.getLeftY()/2, m_driver.getLeftX()/2);
-  // math_drive_gyro = ((Math.round(yaw) + 360 + 180) - (heading + 360))/360.0;
-  // if (Math.abs(math_drive_gyro) <= 0.1) {
-  //   math_drive_gyro = 0;
-  // } 
-  m_myRobot.arcadeDrive( m_driver.getLeftY()/2, ((m_driver.getLeftX() + getAngleDiff(yaw, heading))/-2));
-    
-     
-   
-
+    m_myRobot.arcadeDrive( m_driver.getLeftY(), ((m_driver.getLeftX() )/-1));
   }
 }
